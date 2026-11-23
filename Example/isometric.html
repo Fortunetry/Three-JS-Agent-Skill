@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KUBIK, susunan modul dalam tampilan isometrik</title>
+<meta name="description" content="Halaman demo konsep KUBIK: tujuh modul rak ditampilkan dengan kamera ortografis isometrik, lengkap dengan label dan rotasi 90 derajat.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f4f2ec;
+    --panel: #fbfaf6;
+    --ink: #1e2224;
+    --steel: #c9cdcb;
+    --accent: #17605e;
+    --line: rgba(30, 34, 36, 0.18);
+    --muted: #5c6366;
+    --sans: Archivo, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); }
+  body { font-family: var(--sans); line-height: 1.6; }
+  h1, h2, h3 { margin: 0; font-weight: 600; line-height: 1.08; letter-spacing: -0.015em; }
+  p { margin: 0; }
+  a { color: inherit; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 64px); }
+
+  .skip { position: absolute; left: 12px; top: -60px; z-index: 20; background: var(--ink); color: var(--paper); padding: 10px 16px; text-decoration: none; }
+  .skip:focus { top: 12px; }
+
+  .site-head {
+    display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; justify-content: space-between;
+    padding: 16px clamp(20px, 5vw, 64px); border-bottom: 1px solid var(--line);
+  }
+  .brand { font-weight: 600; letter-spacing: 0.16em; font-size: 0.95rem; text-decoration: none; text-transform: uppercase; }
+  .brand span { color: var(--accent); }
+  .site-nav { display: flex; flex-wrap: wrap; gap: 2px 4px; }
+  .site-nav a {
+    text-decoration: none; font-size: 0.88rem; padding: 10px 12px; min-height: 44px;
+    display: inline-flex; align-items: center; border-bottom: 2px solid transparent;
+  }
+  .site-nav a:hover { border-color: var(--steel); }
+  .site-nav a[aria-current="page"] { border-color: var(--ink); }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+  .hero { padding-top: clamp(28px, 5vw, 56px); padding-bottom: clamp(28px, 4vw, 44px); }
+  .hero-top { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: clamp(20px, 4vw, 48px); align-items: end; }
+  .kicker { font-family: var(--mono); font-size: 0.74rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+  h1 { font-size: clamp(2rem, 4.4vw, 3.4rem); max-width: 17ch; }
+  .lede { font-size: 1.02rem; color: #3c4447; max-width: 52ch; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 18px;
+    border: 1px solid var(--ink); background: transparent; color: var(--ink);
+    font: inherit; font-size: 0.94rem; text-decoration: none; cursor: pointer; border-radius: 2px;
+  }
+  .btn:hover { background: rgba(30, 34, 36, 0.06); }
+  .btn--primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  .btn--primary:hover { background: #000; }
+
+  .stage-row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; margin-top: clamp(22px, 4vw, 40px); }
+  .stage-row p { font-family: var(--mono); font-size: 0.76rem; color: var(--muted); }
+  .controls { display: flex; gap: 8px; }
+  .controls .btn { min-height: 42px; padding: 0 14px; font-size: 0.86rem; }
+
+  .stage {
+    position: relative; margin-top: 12px; aspect-ratio: 16 / 9; min-height: 280px;
+    background: var(--panel); border: 1px solid var(--line); overflow: hidden;
+  }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: default; }
+  .label {
+    position: absolute; left: 0; top: 0; pointer-events: none; white-space: nowrap;
+    font-family: var(--mono); font-size: 0.7rem; line-height: 1.2; letter-spacing: 0.02em;
+    background: rgba(251, 250, 246, 0.94); border: 1px solid var(--line); padding: 3px 6px;
+    transform: translate(-50%, -140%);
+  }
+  .label[data-active="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .fallback { display: none; margin-top: 12px; padding: 18px; border: 1px dashed var(--line); background: var(--panel); }
+  .no-webgl .stage { display: none; }
+  .no-webgl .fallback { display: block; }
+
+  .section { padding: clamp(36px, 6vw, 68px) 0; border-top: 1px solid var(--line); }
+  h2 { font-size: clamp(1.45rem, 2.5vw, 2rem); }
+  .section-intro { margin-top: 10px; color: #3c4447; max-width: 62ch; }
+
+  .parts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(20px, 4vw, 56px); margin-top: 30px; align-items: start; }
+  .part-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .part-list li { border-bottom: 1px solid var(--line); }
+  .part {
+    display: flex; align-items: baseline; gap: 12px; width: 100%; min-height: 50px; padding: 10px 2px;
+    background: none; border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer;
+  }
+  .part:hover { background: rgba(30, 34, 36, 0.05); }
+  .part .idx { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); min-width: 22px; }
+  .part .name { font-weight: 500; }
+  .part .role { display: block; font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+  .part[aria-pressed="true"] { background: rgba(23, 96, 94, 0.08); }
+  .part[aria-pressed="true"] .name { color: var(--accent); }
+  .part[aria-pressed="true"] .idx { color: var(--accent); }
+
+  .detail { background: var(--panel); border: 1px solid var(--line); padding: 22px; position: sticky; top: 20px; }
+  .detail .tag { font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .detail h3 { font-size: 1.35rem; margin-top: 8px; }
+  .detail p { margin-top: 10px; color: #3c4447; }
+  .detail .foot { margin-top: 16px; font-family: var(--mono); font-size: 0.74rem; color: var(--muted); }
+
+  .spec { margin: 28px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 clamp(20px, 4vw, 48px); }
+  .spec div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .spec dt { color: var(--muted); font-size: 0.92rem; }
+  .spec dd { margin: 0; font-size: 0.92rem; }
+  .spec .pending { font-family: var(--mono); font-size: 0.8rem; background: rgba(23, 96, 94, 0.1); border: 1px dashed rgba(23, 96, 94, 0.5); padding: 1px 5px; }
+  .disclaimer { margin-top: 24px; font-size: 0.88rem; color: var(--muted); max-width: 74ch; }
+
+  .site-foot {
+    border-top: 1px solid var(--line); padding: 26px 0 40px;
+    display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; font-size: 0.86rem; color: var(--muted);
+  }
+  .site-foot nav { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .site-foot a { text-decoration: none; border-bottom: 1px solid var(--line); }
+  .site-foot a:hover { border-color: var(--ink); }
+
+  @media (max-width: 900px) {
+    .hero-top { grid-template-columns: minmax(0, 1fr); }
+    .stage { aspect-ratio: 4 / 5; }
+    .parts { grid-template-columns: minmax(0, 1fr); }
+    .detail { position: static; }
+    .spec { grid-template-columns: minmax(0, 1fr); }
+    .label { display: none; }
+  }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Lompat ke konten</a>
+
+<header class="site-head">
+  <a class="brand" href="index.html">KUBIK<span>.</span></a>
+  <nav class="site-nav" aria-label="Gaya tampilan">
+    <a href="diorama.html">Diorama</a>
+    <a href="isometric.html" aria-current="page">Isometrik</a>
+    <a href="parallax.html">Parallax</a>
+    <a href="voxel.html">Voxel</a>
+    <a href="index.html">Indeks gaya</a>
+  </nav>
+</header>
+
+<main id="main">
+  <div class="wrap">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-top">
+        <div>
+          <p class="kicker">Konsep demo, tampilan ortografis</p>
+          <h1 id="hero-title">Susunan yang bisa dibaca seperti gambar kerja</h1>
+        </div>
+        <div>
+          <p class="lede">Tujuh modul, satu pelat alas. Tiap modul punya posisi dan perannya sendiri. Kamera ortografis dipakai supaya ukuran tidak berubah saat susunan diputar, jadi perbandingan antar modul tetap jujur.</p>
+          <div class="actions">
+            <a class="btn btn--primary" href="#susunan">Buka daftar modul</a>
+            <a class="btn" href="#spesifikasi">Lihat spesifikasi</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="stage-row">
+        <p>Kamera isometrik, putaran 90 derajat</p>
+        <div class="controls">
+          <button class="btn" type="button" id="turn-left">Putar 90 ke kiri</button>
+          <button class="btn" type="button" id="turn-right">Putar 90 ke kanan</button>
+        </div>
+      </div>
+
+      <div class="stage" id="stage" role="img" aria-label="Susunan isometrik tujuh modul rak di atas pelat alas: alas, tiang, papan, laci, kait, penutup, dan roda. Klik modul untuk memilih, atau gunakan daftar modul di bawah.">
+        <div class="labels" id="labels" aria-hidden="true"></div>
+      </div>
+      <p class="fallback" role="status">Tampilan 3D tidak tersedia di perangkat ini. Daftar modul dan perannya tetap bisa dibaca di bawah.</p>
+    </section>
+
+    <section class="section" id="susunan" aria-labelledby="susunan-title">
+      <h2 id="susunan-title">Tujuh modul dan perannya</h2>
+      <p class="section-intro">Pilih modul dari daftar atau klik langsung di tampilan 3D. Pilihan yang sama tersorot di kedua tempat.</p>
+
+      <div class="parts">
+        <ul class="part-list">
+          <li><button class="part" type="button" data-mod="alas" aria-pressed="true"><span class="idx">01</span><span><span class="name">Alas</span><span class="role">Pelat dasar dengan empat titik kait</span></span></button></li>
+          <li><button class="part" type="button" data-mod="tiang" aria-pressed="false"><span class="idx">02</span><span><span class="name">Tiang</span><span class="role">Profil vertikal dengan lubang berulang</span></span></button></li>
+          <li><button class="part" type="button" data-mod="papan" aria-pressed="false"><span class="idx">03</span><span><span class="name">Papan</span><span class="role">Bidang datar dengan dua braket</span></span></button></li>
+          <li><button class="part" type="button" data-mod="laci" aria-pressed="false"><span class="idx">04</span><span><span class="name">Laci</span><span class="role">Kotak tarik dengan satu pegangan</span></span></button></li>
+          <li><button class="part" type="button" data-mod="kait" aria-pressed="false"><span class="idx">05</span><span><span class="name">Kait</span><span class="role">Potongan siku pengunci dua modul</span></span></button></li>
+          <li><button class="part" type="button" data-mod="penutup" aria-pressed="false"><span class="idx">06</span><span><span class="name">Penutup</span><span class="role">Panel tipis untuk menutup rongga</span></span></button></li>
+          <li><button class="part" type="button" data-mod="roda" aria-pressed="false"><span class="idx">07</span><span><span class="name">Roda</span><span class="role">Satu set roda untuk alas</span></span></button></li>
+        </ul>
+
+        <div class="detail" aria-live="polite">
+          <p class="tag">Modul terpilih</p>
+          <h3 id="detail-name">Alas</h3>
+          <p id="detail-note">Pelat dasar dengan empat titik kait. Semua modul lain berdiri di atas bidang ini, jadi tinggi akhir susunan ditentukan dari sini.</p>
+          <p class="foot" id="detail-foot">Posisi 1 dari 7</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="spesifikasi" aria-labelledby="spec-title">
+      <h2 id="spec-title">Spesifikasi yang belum final</h2>
+      <p class="section-intro">Angka yang belum ada sumbernya dibiarkan sebagai penanda, bukan diisi dengan nilai karangan.</p>
+
+      <dl class="spec">
+        <div><dt>Bahan papan</dt><dd>Kayu lapis, finis minyak</dd></div>
+        <div><dt>Bahan rangka</dt><dd>Baja profil, cat bubuk</dd></div>
+        <div><dt>Tinggi total susunan</dt><dd><span class="pending">[REAL DATA]</span></dd></div>
+        <div><dt>Berat per modul</dt><dd><span class="pending">[REAL DATA]</span></dd></div>
+        <div><dt>Beban papan</dt><dd><span class="pending">[REAL DATA]</span></dd></div>
+        <div><dt>Modul pada tampilan ini</dt><dd>7 modul, 1 pelat alas</dd></div>
+      </dl>
+
+      <p class="disclaimer">Halaman demo konsep. Spesifikasi kualitatif di atas adalah ilustrasi, bukan data produk final. Tidak ada harga atau klaim performa.</p>
+    </section>
+  </div>
+</main>
+
+<footer class="site-foot wrap">
+  <p>KUBIK, halaman demo konsep. Tidak ada data, harga, atau testimoni nyata.</p>
+  <nav aria-label="Tautan gaya lain">
+    <a href="diorama.html">Diorama</a>
+    <a href="parallax.html">Parallax</a>
+    <a href="voxel.html">Voxel</a>
+    <a href="index.html">Indeks gaya</a>
+  </nav>
+</footer>
+
+<script type="module">
+import * as THREE from 'three';
+
+const stage = document.getElementById('stage');
+const labelLayer = document.getElementById('labels');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+const COPY = {
+  alas: ['Alas', 'Pelat dasar dengan empat titik kait. Semua modul lain berdiri di atas bidang ini, jadi tinggi akhir susunan ditentukan dari sini.'],
+  tiang: ['Tiang', 'Profil vertikal dengan lubang kait berulang. Satu tiang bisa menopang papan di beberapa ketinggian sekaligus.'],
+  papan: ['Papan', 'Bidang datar dengan dua braket. Bisa dipasang sebagai alas, sekat, atau penutup tanpa mengubah bentuknya.'],
+  laci: ['Laci', 'Kotak tarik dengan satu pegangan. Relnya menempel ke tiang, bukan ke papan, supaya isi tidak ikut bergetar saat rak dipindah.'],
+  kait: ['Kait', 'Potongan siku yang mengunci dua modul. Tidak butuh alat, tetapi butuh urutan pemasangan yang benar.'],
+  penutup: ['Penutup', 'Panel tipis untuk menutup rongga. Warnanya dibuat sama dengan papan agar sambungan tidak terlihat.'],
+  roda: ['Roda', 'Satu set roda untuk alas. Dipakai kalau susunan perlu dipindah tanpa dibongkar lebih dulu.'],
+};
+
+function startScene() {
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+  } catch (err) {
+    document.body.classList.add('no-webgl');
+    console.warn('WebGL tidak tersedia, menampilkan konten teks:', err.message);
+    return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xfbfaf6);
+
+  const VIEW_BASE = 7.8;
+  let VIEW = VIEW_BASE;
+  const camera = new THREE.OrthographicCamera(-VIEW, VIEW, VIEW, -VIEW, 0.1, 200);
+  const TARGET = new THREE.Vector3(0, 1.1, 0);
+  const RADIUS = 34.7;
+  const PHI = Math.acos(1 / Math.sqrt(3)); // true isometric elevation, 35.264 degrees
+  let theta = Math.PI / 4;
+  let thetaTarget = theta;
+  const spherical = new THREE.Spherical(RADIUS, PHI, theta);
+
+  function placeCamera() {
+    spherical.theta = theta;
+    camera.position.setFromSpherical(spherical).add(TARGET);
+    camera.lookAt(TARGET);
+    camera.updateMatrixWorld();
+  }
+  placeCamera();
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x9b9f9c, 1.15));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+  sun.position.set(-6, 12, 4);
+  scene.add(sun);
+
+  const C = {
+    plate: 0xd7dad6,
+    plateEdge: 0x8d948f,
+    steel: 0x4a5254,
+    wood: 0xc9a880,
+    woodDark: 0xa9855f,
+    cream: 0xe8e4d8,
+    accent: 0x17605e,
+  };
+
+  function lam(color, extra = {}) {
+    return new THREE.MeshLambertMaterial({ color, ...extra });
+  }
+  function box(w, h, d, x, y, z, color, group) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), lam(color));
+    m.position.set(x, y, z);
+    group.add(m);
+    return m;
+  }
+
+  const modules = [];
+  function register(key, group, labelY) {
+    group.traverse((o) => { if (o.isMesh) o.userData.mod = key; });
+    group.userData.mod = key;
+    scene.add(group);
+    modules.push({ key, group, labelY, anchor: new THREE.Vector3() });
+  }
+
+  // Base plate
+  const plate = box(12, 0.35, 12, 0, -0.175, 0, C.plate, scene);
+  plate.receiveShadow = true;
+  const plateEdges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(plate.geometry),
+    new THREE.LineBasicMaterial({ color: C.plateEdge, transparent: true, opacity: 0.55 })
+  );
+  plateEdges.position.copy(plate.position);
+  scene.add(plateEdges);
+
+  // 01 alas
+  const alas = new THREE.Group();
+  box(2.6, 0.36, 2.6, 0, 0.18, 0, C.steel, alas);
+  [[-0.9, -0.9], [0.9, -0.9], [-0.9, 0.9], [0.9, 0.9]].forEach(([x, z]) => box(0.22, 0.12, 0.22, x, 0.42, z, C.accent, alas));
+  alas.position.set(-3.3, 0, -3.3);
+  register('alas', alas, 1.0);
+
+  // 02 tiang
+  const tiang = new THREE.Group();
+  box(0.4, 3.4, 0.4, 0, 1.7, 0, C.steel, tiang);
+  [0.6, 1.6, 2.6].forEach((y) => box(0.52, 0.1, 0.52, 0, y, 0, C.cream, tiang));
+  tiang.position.set(0, 0, -3.5);
+  register('tiang', tiang, 3.7);
+
+  // 03 papan
+  const papan = new THREE.Group();
+  box(2.8, 0.2, 1.5, 0, 2.0, 0, C.wood, papan);
+  // Full-height supports so the board stands on the plate instead of floating.
+  box(0.18, 1.9, 1.2, -1.05, 0.95, 0, C.steel, papan);
+  box(0.18, 1.9, 1.2, 1.05, 0.95, 0, C.steel, papan);
+  papan.position.set(3.3, 0, -3.3);
+  register('papan', papan, 2.4);
+
+  // 04 laci
+  const laci = new THREE.Group();
+  box(2.1, 1.2, 2.1, 0, 0.6, 0, C.woodDark, laci);
+  box(2.0, 0.9, 0.1, 0, 0.62, 1.06, C.wood, laci);
+  box(0.7, 0.12, 0.14, 0, 0.62, 1.16, C.steel, laci);
+  laci.position.set(-3.4, 0, 0);
+  register('laci', laci, 1.5);
+
+  // 05 kait
+  const kait = new THREE.Group();
+  box(0.34, 1.3, 0.34, 0, 0.65, 0, C.accent, kait);
+  box(0.9, 0.28, 0.34, 0.28, 1.2, 0, C.accent, kait);
+  kait.position.set(3.4, 0, 0);
+  register('kait', kait, 1.6);
+
+  // 06 penutup
+  const penutup = new THREE.Group();
+  box(2.3, 0.16, 2.3, 0, 0.44, 0, C.cream, penutup);
+  box(0.24, 0.36, 0.24, -0.9, 0.18, -0.9, C.steel, penutup);
+  box(0.24, 0.36, 0.24, 0.9, 0.18, -0.9, C.steel, penutup);
+  penutup.position.set(-3.3, 0, 3.3);
+  register('penutup', penutup, 0.9);
+  const penutupEdges = new THREE.LineSegments(
+    new THREE.EdgesGeometry(penutup.children[0].geometry),
+    new THREE.LineBasicMaterial({ color: C.steel, transparent: true, opacity: 0.7 })
+  );
+  penutupEdges.position.copy(penutup.children[0].position);
+  penutup.add(penutupEdges);
+
+  // 07 roda
+  const roda = new THREE.Group();
+  const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.3, 18), lam(C.steel));
+  wheel.rotation.z = Math.PI / 2;
+  wheel.position.set(0, 0.4, 0);
+  roda.add(wheel);
+  box(0.9, 0.22, 0.22, 0, 0.72, 0, C.steel, roda);
+  roda.position.set(3.3, 0, 3.3);
+  register('roda', roda, 1.2);
+
+  // --- labels ---
+  const labelEls = new Map();
+  modules.forEach((m) => {
+    const el = document.createElement('span');
+    el.className = 'label';
+    el.textContent = COPY[m.key][0];
+    labelLayer.appendChild(el);
+    labelEls.set(m.key, el);
+  });
+
+  const projected = new THREE.Vector3();
+  function updateLabels() {
+    const w = stage.clientWidth;
+    const h = stage.clientHeight;
+    if (!w || !h) return;
+    modules.forEach((m) => {
+      m.anchor.set(m.group.position.x, m.labelY, m.group.position.z);
+      projected.copy(m.anchor).project(camera);
+      const sx = (projected.x * 0.5 + 0.5) * w;
+      const sy = (-projected.y * 0.5 + 0.5) * h;
+      const el = labelEls.get(m.key);
+      el.style.transform = `translate(${sx.toFixed(1)}px, ${sy.toFixed(1)}px) translate(-50%, -140%)`;
+      el.hidden = projected.z > 1;
+    });
+  }
+
+  // --- selection ---
+  const accent = new THREE.Color(C.accent);
+  const black = new THREE.Color(0x000000);
+  const buttons = Array.from(document.querySelectorAll('.part'));
+  const detailName = document.getElementById('detail-name');
+  const detailNote = document.getElementById('detail-note');
+  const detailFoot = document.getElementById('detail-foot');
+  let active = 'alas';
+  let dirty = true;
+
+  function paint(key) {
+    modules.forEach(({ key: k, group }) => {
+      const on = k === key;
+      group.traverse((o) => {
+        if (!o.isMesh || !o.material || !o.material.emissive) return;
+        o.material.emissive.copy(on ? accent : black);
+        o.material.emissiveIntensity = on ? 0.34 : 0;
+      });
+    });
+    labelEls.forEach((el, k) => el.setAttribute('data-active', String(k === key)));
+  }
+
+  function select(key) {
+    const idx = modules.findIndex((m) => m.key === key);
+    if (idx < 0) return;
+    active = key;
+    paint(key);
+    detailName.textContent = COPY[key][0];
+    detailNote.textContent = COPY[key][1];
+    detailFoot.textContent = `Posisi ${idx + 1} dari ${modules.length}`;
+    buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mod === key)));
+    dirty = true;
+  }
+
+  buttons.forEach((b) => b.addEventListener('click', () => select(b.dataset.mod)));
+
+  // --- raycast ---
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  const canvas = renderer.domElement;
+
+  function pick(event) {
+    const r = canvas.getBoundingClientRect();
+    pointer.x = ((event.clientX - r.left) / r.width) * 2 - 1;
+    pointer.y = -((event.clientY - r.top) / r.height) * 2 + 1;
+    camera.updateMatrixWorld();
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(modules.map((m) => m.group), true);
+    for (const hit of hits) {
+      let o = hit.object;
+      while (o && !o.userData.mod) o = o.parent;
+      if (o && o.userData.mod) return o.userData.mod;
+    }
+    return null;
+  }
+
+  let down = null;
+  canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener('pointerup', (e) => {
+    if (!down) return;
+    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+    down = null;
+    if (moved > 6) return;
+    const key = pick(e);
+    if (key) select(key);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return;
+    canvas.style.cursor = pick(e) ? 'pointer' : 'default';
+  });
+
+  // --- 90 degree rotation ---
+  const STEP = Math.PI / 2;
+  function turn(dir) {
+    thetaTarget += dir * STEP;
+    dirty = true;
+  }
+  document.getElementById('turn-left').addEventListener('click', () => turn(-1));
+  document.getElementById('turn-right').addEventListener('click', () => turn(1));
+
+  function resize() {
+    const w = stage.clientWidth;
+    const h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    const aspect = w / h;
+    // Keep the whole plate in frame on tall screens: grow VIEW, never shrink it.
+    VIEW = Math.max(VIEW_BASE, 6.7 / aspect);
+    camera.left = -VIEW * aspect;
+    camera.right = VIEW * aspect;
+    camera.top = VIEW;
+    camera.bottom = -VIEW;
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld();
+    updateLabels();
+    dirty = true;
+  }
+  window.addEventListener('resize', resize);
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    const diff = thetaTarget - theta;
+    if (Math.abs(diff) > 0.002) {
+      const k = reduceMotion.matches ? 1 : 1 - Math.exp(-dt / 0.09);
+      theta += diff * k;
+      if (Math.abs(thetaTarget - theta) <= 0.002) theta = thetaTarget;
+      placeCamera();
+      updateLabels();
+      dirty = true;
+    }
+    if (dirty) {
+      renderer.render(scene, camera);
+      dirty = false;
+    }
+  }
+  function syncLoop() {
+    renderer.setAnimationLoop(document.hidden ? null : frame);
+    if (document.hidden) renderer.render(scene, camera);
+  }
+  document.addEventListener('visibilitychange', syncLoop);
+
+  select('alas');
+  resize();
+  syncLoop();
+
+  window.__kubik = {
+    info: () => ({
+      calls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles,
+      geometries: renderer.info.memory.geometries,
+    }),
+  };
+}
+
+startScene();
+</script>
+</body>
+</html>

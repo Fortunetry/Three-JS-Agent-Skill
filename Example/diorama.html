@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KUBIK, susunan rak dalam ruang mini</title>
+<meta name="description" content="Halaman demo konsep KUBIK: satu susunan rak modular dilihat sebagai ruang kerja mini. Bisa diputar dan setiap bagian bisa dipilih.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2e7d5;
+    --panel: #fbf5ea;
+    --ink: #2a211b;
+    --sage: #7e8b72;
+    --accent: #b4633c;
+    --line: rgba(42, 33, 27, 0.2);
+    --muted: #6b5c4f;
+    --stage: #efe2cc;
+    --serif: Fraunces, "Iowan Old Style", Georgia, serif;
+    --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font-family: var(--sans); line-height: 1.6; }
+  a { color: inherit; }
+  h1, h2, h3 { font-family: var(--serif); font-weight: 600; line-height: 1.1; margin: 0; }
+  p { margin: 0; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 64px); }
+
+  .skip {
+    position: absolute; left: 12px; top: -60px; z-index: 20;
+    background: var(--ink); color: var(--bg); padding: 10px 16px; text-decoration: none;
+    border-radius: 4px;
+  }
+  .skip:focus { top: 12px; }
+
+  .site-head {
+    display: flex; flex-wrap: wrap; gap: 12px 28px;
+    align-items: center; justify-content: space-between;
+    padding: 18px clamp(20px, 5vw, 64px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { font-family: var(--serif); font-size: 1.35rem; letter-spacing: 0.02em; text-decoration: none; }
+  .brand span { color: var(--accent); }
+  .site-nav { display: flex; flex-wrap: wrap; gap: 4px 6px; }
+  .site-nav a {
+    text-decoration: none; font-size: 0.92rem; padding: 10px 12px; border-radius: 4px;
+    border: 1px solid transparent; min-height: 44px; display: inline-flex; align-items: center;
+  }
+  .site-nav a:hover { border-color: var(--line); }
+  .site-nav a[aria-current="page"] { border-color: var(--ink); }
+  a:focus-visible, button:focus-visible {
+    outline: 3px solid var(--ink); outline-offset: 3px;
+  }
+
+  .hero {
+    display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+    gap: clamp(24px, 4vw, 56px); align-items: center;
+    padding-top: clamp(24px, 4vw, 48px); padding-bottom: clamp(32px, 5vw, 64px);
+  }
+  .kicker {
+    font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 18px;
+  }
+  h1 { font-size: clamp(2.1rem, 4.6vw, 3.6rem); letter-spacing: -0.015em; max-width: 15ch; }
+  .lede { margin-top: 20px; font-size: 1.05rem; color: #43372d; max-width: 46ch; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 0 20px; border-radius: 4px;
+    border: 1px solid var(--ink); background: transparent; color: var(--ink);
+    font: inherit; font-size: 0.98rem; text-decoration: none; cursor: pointer;
+  }
+  .btn:hover { background: rgba(42, 33, 27, 0.06); }
+  .btn--primary { background: var(--accent); border-color: var(--accent); color: #fff5ec; }
+  .btn--primary:hover { background: #9d5533; border-color: #9d5533; }
+  .btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  .stage-wrap { min-width: 0; }
+  .stage {
+    position: relative; aspect-ratio: 4 / 3; min-height: 300px;
+    background: var(--stage); border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+  }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .stage-note {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    margin-top: 12px; font-size: 0.88rem; color: var(--muted);
+  }
+  .stage-note .spacer { flex: 1 1 24px; }
+  .controls { display: flex; gap: 8px; }
+  .controls .btn { min-height: 44px; padding: 0 14px; font-size: 0.88rem; }
+  .fallback { display: none; padding: 20px; border: 1px dashed var(--line); border-radius: 6px; background: var(--panel); }
+  .no-webgl .stage { display: none; }
+  .no-webgl .fallback { display: block; }
+  .no-webgl .hero { grid-template-columns: minmax(0, 1fr); }
+
+  .section { padding: clamp(40px, 6vw, 72px) 0; border-top: 1px solid var(--line); }
+  .section h2 { font-size: clamp(1.5rem, 2.6vw, 2.1rem); max-width: 24ch; }
+  .section-intro { margin-top: 12px; color: #43372d; max-width: 58ch; }
+
+  .parts {
+    display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: clamp(20px, 4vw, 48px); margin-top: 32px; align-items: start;
+  }
+  .part-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .part-list li { border-bottom: 1px solid var(--line); }
+  .part {
+    display: flex; align-items: center; gap: 14px; width: 100%;
+    min-height: 52px; padding: 10px 4px; background: none; border: 0;
+    font: inherit; color: inherit; text-align: left; cursor: pointer; border-radius: 2px;
+  }
+  .part:hover { background: rgba(42, 33, 27, 0.05); }
+  .part[aria-pressed="true"] { color: var(--accent); }
+  .part[aria-pressed="true"] .part-num { background: var(--accent); color: #fff5ec; border-color: var(--accent); }
+  .part-num {
+    flex: 0 0 auto; width: 30px; height: 30px; display: grid; place-items: center;
+    font-size: 0.72rem; letter-spacing: 0.04em; border: 1px solid var(--line); border-radius: 3px;
+    color: var(--muted); font-variant-numeric: tabular-nums;
+  }
+  .detail {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    padding: 22px 22px 24px; position: sticky; top: 20px;
+  }
+  .detail h3 { font-size: 1.3rem; margin-top: 8px; }
+  .detail p { margin-top: 10px; color: #43372d; }
+  .detail .tag { font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+
+  .materials {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(18px, 3vw, 32px); margin-top: 32px;
+  }
+  .material { border-top: 2px solid var(--ink); padding-top: 14px; }
+  .material h3 { font-size: 1.1rem; }
+  .material p { margin-top: 8px; color: #43372d; font-size: 0.96rem; }
+  .disclaimer {
+    margin-top: 28px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 6px;
+    font-size: 0.9rem; color: var(--muted); max-width: 70ch;
+  }
+
+  .site-foot {
+    border-top: 1px solid var(--line); padding: 28px 0 40px;
+    display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: space-between;
+    font-size: 0.88rem; color: var(--muted);
+  }
+  .site-foot nav { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .site-foot a { text-decoration: none; border-bottom: 1px solid var(--line); }
+  .site-foot a:hover { border-color: var(--ink); }
+
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: minmax(0, 1fr); }
+    .stage { aspect-ratio: 1 / 1; }
+    .parts { grid-template-columns: minmax(0, 1fr); }
+    .detail { position: static; }
+    .materials { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { scroll-behavior: auto; }
+  }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Lompat ke konten</a>
+
+<header class="site-head">
+  <a class="brand" href="index.html">KUBIK<span>.</span></a>
+  <nav class="site-nav" aria-label="Gaya tampilan">
+    <a href="diorama.html" aria-current="page">Diorama</a>
+    <a href="isometric.html">Isometrik</a>
+    <a href="parallax.html">Parallax</a>
+    <a href="voxel.html">Voxel</a>
+    <a href="index.html">Indeks gaya</a>
+  </nav>
+</header>
+
+<main id="main">
+  <div class="wrap">
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <p class="kicker">Konsep demo</p>
+        <h1 id="hero-title">Rak yang tumbuh mengikuti ruang kerja Anda</h1>
+        <p class="lede">KUBIK disusun dari modul yang sama: satu alas, satu tiang, satu papan. Tambah atau pindahkan tanpa membongkar seluruh rak. Halaman ini memperlihatkan satu susunan sebagai ruang mini.</p>
+        <div class="actions">
+          <a class="btn btn--primary" href="#isi">Lihat isi rak</a>
+          <a class="btn" href="#bahan">Bahan dan selesai</a>
+        </div>
+      </div>
+
+      <div class="stage-wrap">
+        <div class="stage" id="stage" role="img" aria-label="Diorama ruang kerja mini berisi meja, rak tiga tingkat, lampu, kursi, tanaman, dan tumpukan modul. Tarik untuk melihat dari sisi lain, atau pilih bagian dari daftar di bawah."></div>
+        <p class="fallback" role="status">Tampilan 3D tidak tersedia di perangkat ini. Daftar bagian dan penjelasannya tetap bisa dibaca di bawah.</p>
+        <div class="stage-note">
+          <span>Tarik untuk memutar, gulir untuk memperbesar.</span>
+          <span class="spacer"></span>
+          <div class="controls">
+            <button class="btn" type="button" id="turn-left">Putar kiri</button>
+            <button class="btn" type="button" id="turn-right">Putar kanan</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="isi" aria-labelledby="isi-title">
+      <h2 id="isi-title">Sembilan bagian, satu susunan</h2>
+      <p class="section-intro">Setiap bagian di dalam kotak bisa dipilih. Pilih dari daftar, atau klik langsung di tampilan 3D. Bagian yang aktif ditandai dengan warna terakota.</p>
+
+      <div class="parts">
+        <ul class="part-list">
+          <li><button class="part" type="button" data-prop="desk" aria-pressed="true"><span class="part-num">01</span> Meja kerja</button></li>
+          <li><button class="part" type="button" data-prop="shelf" aria-pressed="false"><span class="part-num">02</span> Rak tiga tingkat</button></li>
+          <li><button class="part" type="button" data-prop="lamp" aria-pressed="false"><span class="part-num">03</span> Lampu meja</button></li>
+          <li><button class="part" type="button" data-prop="chair" aria-pressed="false"><span class="part-num">04</span> Kursi kerja</button></li>
+          <li><button class="part" type="button" data-prop="plant" aria-pressed="false"><span class="part-num">05</span> Tanaman</button></li>
+          <li><button class="part" type="button" data-prop="stack" aria-pressed="false"><span class="part-num">06</span> Tumpukan modul</button></li>
+          <li><button class="part" type="button" data-prop="crate" aria-pressed="false"><span class="part-num">07</span> Krat penyimpanan</button></li>
+          <li><button class="part" type="button" data-prop="rug" aria-pressed="false"><span class="part-num">08</span> Karpet</button></li>
+          <li><button class="part" type="button" data-prop="panel" aria-pressed="false"><span class="part-num">09</span> Panel dinding</button></li>
+        </ul>
+
+        <div class="detail" aria-live="polite">
+          <p class="tag">Bagian aktif</p>
+          <h3 id="detail-name">Meja kerja</h3>
+          <p id="detail-note">Papan lebar di atas dua pasang tiang. Tiang yang sama dipakai oleh rak dan bangku, jadi meja bisa dipindah tanpa membeli kaki baru.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="bahan" aria-labelledby="bahan-title">
+      <h2 id="bahan-title">Bahan dan selesai</h2>
+      <p class="section-intro">Tiga keputusan bahan yang menentukan seluruh susunan. Ditulis kualitatif, tanpa angka, karena halaman ini belum memuat data produk final.</p>
+
+      <div class="materials">
+        <div class="material">
+          <h3>Papan</h3>
+          <p>Kayu lapis dengan finis minyak. Warna dibuat rata supaya sambungan terlihat, bukan disembunyikan.</p>
+        </div>
+        <div class="material">
+          <h3>Rangka</h3>
+          <p>Baja profil dengan cat bubuk. Sudut dibuat tajam agar bayangan di dinding tetap terbaca.</p>
+        </div>
+        <div class="material">
+          <h3>Sambungan</h3>
+          <p>Kait yang sama di semua sisi. Satu papan bisa jadi alas, sekat, atau penutup tanpa part tambahan.</p>
+        </div>
+      </div>
+
+      <p class="disclaimer">Spesifikasi di halaman ini adalah ilustrasi konsep, bukan data produk final. Tidak ada harga, ukuran, atau klaim performa yang ditampilkan.</p>
+    </section>
+  </div>
+</main>
+
+<footer class="site-foot wrap">
+  <p>KUBIK, halaman demo konsep. Tidak ada data, harga, atau testimoni nyata.</p>
+  <nav aria-label="Tautan gaya lain">
+    <a href="isometric.html">Isometrik</a>
+    <a href="parallax.html">Parallax</a>
+    <a href="voxel.html">Voxel</a>
+    <a href="index.html">Indeks gaya</a>
+  </nav>
+</footer>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/controls/OrbitControls.js';
+
+const stage = document.getElementById('stage');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+
+const COPY = {
+  desk: ['Meja kerja', 'Papan lebar di atas dua pasang tiang. Tiang yang sama dipakai oleh rak dan bangku, jadi meja bisa dipindah tanpa membeli kaki baru.'],
+  shelf: ['Rak tiga tingkat', 'Tiga papan dengan jarak tetap. Tinggi tiap tingkat bisa ditukar karena lubang kait berulang di sepanjang tiang.'],
+  lamp: ['Lampu meja', 'Satu sumber cahaya hangat di atas meja. Di halaman ini lampu menyala sekali saat dimuat, lalu diam.'],
+  chair: ['Kursi kerja', 'Dudukan dan sandaran dari papan yang sama. Rangka kursi memakai profil baja yang lebih pendek.'],
+  plant: ['Tanaman', 'Satu objek hidup di dalam kotak. Fungsinya menandai skala: tinggi rak tiga tingkat kira-kira dua kali tinggi pot.'],
+  stack: ['Tumpukan modul', 'Tiga modul terlipat menunggu dipasang. Menandai bahwa susunan ini masih bisa bertambah.'],
+  crate: ['Krat penyimpanan', 'Kotak terbuka untuk barang yang tidak perlu terlihat. Bisa masuk ke rongga rak saat tidak dipakai.'],
+  rug: ['Karpet', 'Bidang tipis yang menandai area kerja. Warnanya sengaja lebih gelap dari lantai agar batas ruang terbaca.'],
+  panel: ['Panel dinding', 'Papan berlubang untuk menggantung alat. Dipasang ke dinding, bukan ke rangka rak, supaya rak tetap bisa dipindah.'],
+};
+
+function startScene() {
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+  } catch (err) {
+    document.body.classList.add('no-webgl');
+    console.warn('WebGL tidak tersedia, menampilkan konten teks:', err.message);
+    return;
+  }
+
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xefe2cc);
+
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+  const target = new THREE.Vector3(0, 1.6, 0);
+  const dir = new THREE.Vector3(9, 6.6, 11).normalize();
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.target.copy(target);
+  controls.enablePan = false;
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minPolarAngle = Math.PI / 4;
+  controls.maxPolarAngle = Math.PI / 2.4;
+  controls.minDistance = 11;
+  controls.maxDistance = 22;
+  controls.rotateSpeed = 0.5;
+
+  // Azimuth limits are absolute, so center them on where the camera starts.
+  const a0 = Math.atan2(dir.x, dir.z);
+  controls.minAzimuthAngle = a0 - 0.38;
+  controls.maxAzimuthAngle = a0 + 0.38;
+
+  scene.add(new THREE.HemisphereLight(0xfff4e0, 0x7a6a5a, 0.75));
+  const warm = new THREE.DirectionalLight(0xffe2b0, 2.1);
+  warm.position.set(6, 10, 5);
+  warm.castShadow = true;
+  warm.shadow.mapSize.set(1024, 1024);
+  warm.shadow.camera.left = -8;
+  warm.shadow.camera.right = 8;
+  warm.shadow.camera.top = 8;
+  warm.shadow.camera.bottom = -8;
+  warm.shadow.camera.near = 1;
+  warm.shadow.camera.far = 30;
+  warm.shadow.bias = -0.0015;
+  scene.add(warm);
+
+  const C = {
+    floor: 0xd9c7a7, wall: 0xc8b08f, wallBack: 0xbfa887,
+    wood: 0xb98d63, woodDark: 0x8c6844,
+    steel: 0x3b3630, sage: 0x7e8b72, cream: 0xe7dcc6,
+    clay: 0xa9613f, leaf: 0x5f7350, pot: 0xb4633c,
+  };
+
+  function lam(color, extra = {}) {
+    return new THREE.MeshLambertMaterial({ color, ...extra });
+  }
+  function box(w, h, d, x, y, z, color, group) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), lam(color));
+    m.position.set(x, y, z);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    group.add(m);
+    return m;
+  }
+
+  const props = [];
+  function register(key, group) {
+    group.traverse((o) => {
+      if (o.isMesh) { o.userData.prop = key; o.castShadow = true; o.receiveShadow = true; }
+    });
+    group.userData.prop = key;
+    scene.add(group);
+    props.push({ key, group });
+    return group;
+  }
+
+  // The box: floor plus two walls only, so the inside stays readable.
+  const room = new THREE.Group();
+  const floor = box(10, 0.3, 10, 0, -0.15, 0, C.floor, room);
+  floor.castShadow = false;
+  const back = box(10, 6, 0.3, 0, 3, -5, C.wallBack, room);
+  const side = box(0.3, 6, 10, -5, 3, 0, C.wall, room);
+  back.castShadow = false; side.castShadow = false;
+  scene.add(room);
+
+  // 01 desk
+  const desk = new THREE.Group();
+  box(4, 0.18, 1.9, 0, 2.2, 0, C.wood, desk);
+  [[-1.85, -0.8], [1.85, -0.8], [-1.85, 0.8], [1.85, 0.8]].forEach(([x, z]) => {
+    box(0.14, 2.2, 0.14, x, 1.1, z, C.steel, desk);
+  });
+  box(3.7, 0.08, 0.12, 0, 1.4, -0.8, C.steel, desk);
+  desk.position.set(-1.1, 0, -0.9);
+  register('desk', desk);
+
+  // 02 shelf
+  const shelf = new THREE.Group();
+  box(0.16, 4.6, 1.5, -1.2, 2.3, 0, C.steel, shelf);
+  box(0.16, 4.6, 1.5, 1.2, 2.3, 0, C.steel, shelf);
+  [1.1, 2.5, 3.9].forEach((y) => box(2.56, 0.14, 1.5, 0, y, 0, C.wood, shelf));
+  box(1.1, 0.5, 0.9, -0.5, 2.82, 0, C.sage, shelf);
+  box(0.7, 0.32, 0.6, 0.62, 2.73, 0.1, C.cream, shelf);
+  shelf.position.set(3.2, 0, -3.3);
+  shelf.rotation.y = -0.04;
+  register('shelf', shelf);
+
+  // 03 lamp (the one object that moves, once, on load)
+  const lampGroup = new THREE.Group();
+  const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.3, 0.09, 20), lam(C.steel));
+  lampBase.position.y = 0.05;
+  lampGroup.add(lampBase);
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.3, 12), lam(C.steel));
+  pole.position.y = 0.7;
+  lampGroup.add(pole);
+  const shadeMat = lam(C.clay, { emissive: 0xffcf8a, emissiveIntensity: 0 });
+  const shade = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.5, 18, 1, true), shadeMat);
+  shade.position.y = 1.45;
+  shade.rotation.x = Math.PI;
+  shade.material.side = THREE.DoubleSide;
+  lampGroup.add(shade);
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 12, 10), new THREE.MeshBasicMaterial({ color: 0xfff0cc }));
+  bulb.position.y = 1.3;
+  lampGroup.add(bulb);
+  const lampLight = new THREE.PointLight(0xffd9a0, 0, 8, 2);
+  lampLight.position.y = 1.32;
+  lampGroup.add(lampLight);
+  lampGroup.position.set(-2.5, 2.29, -1.25);
+  lampGroup.rotation.y = 0.4;
+  register('lamp', lampGroup);
+
+  // 04 chair
+  const chair = new THREE.Group();
+  box(1.3, 0.16, 1.3, 0, 1.2, 0, C.woodDark, chair);
+  box(1.3, 1.5, 0.14, 0, 1.95, 0.62, C.woodDark, chair);
+  [[-0.52, -0.52], [0.52, -0.52], [-0.52, 0.52], [0.52, 0.52]].forEach(([x, z]) => {
+    box(0.12, 1.2, 0.12, x, 0.6, z, C.steel, chair);
+  });
+  chair.position.set(-1.1, 0, 1.5);
+  chair.rotation.y = 0.12;
+  register('chair', chair);
+
+  // 05 plant
+  const plant = new THREE.Group();
+  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.3, 0.55, 16), lam(C.pot));
+  pot.position.y = 0.28;
+  pot.castShadow = true; pot.receiveShadow = true;
+  plant.add(pot);
+  const leafMat = lam(C.leaf, { flatShading: true });
+  [[0, 1.1, 0, 0.5], [0.3, 1.5, 0.1, 0.38], [-0.28, 1.42, -0.12, 0.34], [0.05, 1.8, -0.18, 0.3]].forEach(([x, y, z, r]) => {
+    const l = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 0), leafMat);
+    l.position.set(x, y, z);
+    l.castShadow = true;
+    plant.add(l);
+  });
+  plant.position.set(3.7, 0, 1.9);
+  register('plant', plant);
+
+  // 06 stacked modules
+  const stack = new THREE.Group();
+  box(1.5, 0.42, 1.1, 0, 0.22, 0, C.sage, stack);
+  box(1.5, 0.42, 1.1, 0.06, 0.65, 0.04, C.cream, stack);
+  box(1.5, 0.42, 1.1, -0.04, 1.08, -0.03, C.wood, stack);
+  stack.position.set(1.1, 0, 3.1);
+  stack.rotation.y = -0.18;
+  register('stack', stack);
+
+  // 07 crate
+  const crate = new THREE.Group();
+  box(1.3, 0.9, 1.3, 0, 0.45, 0, C.wood, crate);
+  box(1.36, 0.1, 1.36, 0, 0.92, 0, C.woodDark, crate);
+  box(0.9, 0.06, 0.9, 0, 0.98, 0, C.cream, crate);
+  crate.position.set(-3.5, 0, 2.7);
+  crate.rotation.y = 0.22;
+  register('crate', crate);
+
+  // 08 rug
+  const rug = new THREE.Group();
+  const rugMesh = box(4.4, 0.05, 3.4, 0, 0.03, 0, C.sage, rug);
+  rugMesh.castShadow = false;
+  rug.position.set(0.1, 0, 0.9);
+  register('rug', rug);
+
+  // 09 wall panel
+  const panel = new THREE.Group();
+  box(3.2, 2.2, 0.09, 0, 0, 0, C.cream, panel);
+  [[-1.1, 0.6], [0, 0.6], [1.1, 0.6], [-0.55, -0.4], [0.55, -0.4]].forEach(([x, y]) => {
+    box(0.08, 0.08, 0.22, x, y, 0.14, C.steel, panel);
+  });
+  panel.position.set(0.4, 3.5, -4.78);
+  register('panel', panel);
+
+  // --- selection ---
+  const byKey = new Map(props.map((p) => [p.key, p]));
+  const listButtons = Array.from(document.querySelectorAll('.part'));
+  const detailName = document.getElementById('detail-name');
+  const detailNote = document.getElementById('detail-note');
+  const accentColor = new THREE.Color(0xb4633c);
+  let activeKey = 'desk';
+
+  function paint(key) {
+    props.forEach(({ key: k, group }) => {
+      const on = k === key;
+      group.traverse((o) => {
+        if (!o.isMesh || !o.material || !o.material.emissive) return;
+        o.material.emissive.copy(on ? accentColor : new THREE.Color(0x000000));
+        o.material.emissiveIntensity = on ? 0.2 : 0;
+      });
+    });
+  }
+
+  function select(key, announce = true) {
+    if (!byKey.has(key)) return;
+    activeKey = key;
+    paint(key);
+    const [name, note] = COPY[key];
+    detailName.textContent = name;
+    detailNote.textContent = note;
+    listButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.prop === key)));
+    if (announce) detailNote.parentElement.setAttribute('aria-live', 'polite');
+    renderer.render(scene, camera);
+  }
+
+  listButtons.forEach((btn) => {
+    btn.addEventListener('click', () => select(btn.dataset.prop));
+  });
+
+  // --- raycast ---
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  const canvas = renderer.domElement;
+  let down = null;
+
+  function pick(event) {
+    const r = canvas.getBoundingClientRect();
+    pointer.x = ((event.clientX - r.left) / r.width) * 2 - 1;
+    pointer.y = -((event.clientY - r.top) / r.height) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(props.map((p) => p.group), true);
+    for (const hit of hits) {
+      let o = hit.object;
+      while (o && !o.userData.prop) o = o.parent;
+      if (o && o.userData.prop) return o.userData.prop;
+    }
+    return null;
+  }
+
+  canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener('pointerup', (e) => {
+    if (!down) return;
+    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+    down = null;
+    if (moved > 6) return; // a drag, not a click
+    const key = pick(e);
+    if (key) select(key);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return;
+    canvas.style.cursor = pick(e) ? 'pointer' : 'grab';
+  });
+  canvas.addEventListener('pointerleave', () => { canvas.style.cursor = 'grab'; });
+
+  // --- keyboard camera steps ---
+  const spherical = new THREE.Spherical();
+  const offset = new THREE.Vector3();
+  function turn(rad) {
+    offset.copy(camera.position).sub(controls.target);
+    spherical.setFromVector3(offset);
+    spherical.theta = THREE.MathUtils.clamp(
+      spherical.theta + rad, controls.minAzimuthAngle, controls.maxAzimuthAngle
+    );
+    offset.setFromSpherical(spherical);
+    camera.position.copy(controls.target).add(offset);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  document.getElementById('turn-left').addEventListener('click', () => turn(-0.18));
+  document.getElementById('turn-right').addEventListener('click', () => turn(0.18));
+
+  // --- resize ---
+  function resize() {
+    const w = stage.clientWidth;
+    const h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    const aspect = w / h;
+    camera.aspect = aspect;
+    camera.updateProjectionMatrix();
+    // Narrow screens need more distance, otherwise the box is clipped.
+    // Keep whatever direction the user has turned to, only change the radius.
+    const want = aspect < 1.25 ? 16.8 * Math.min(1.45, 1.25 / aspect) : 16.8;
+    offset.copy(camera.position).sub(controls.target);
+    if (offset.lengthSq() > 0) {
+      offset.setLength(want);
+      camera.position.copy(controls.target).add(offset);
+    } else {
+      camera.position.copy(controls.target).addScaledVector(dir, want);
+    }
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  window.addEventListener('resize', resize);
+
+  // --- loop ---
+  const lampStart = performance.now();
+  let lampDone = reduceMotion.matches;
+  if (lampDone) { lampLight.intensity = 5.5; shadeMat.emissiveIntensity = 0.85; }
+  let last = lampStart;
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    if (!lampDone) {
+      const k = Math.min((now - lampStart) / 1200, 1);
+      lampLight.intensity = 5.5 * k;
+      shadeMat.emissiveIntensity = 0.85 * k;
+      if (k >= 1) lampDone = true;
+    }
+    controls.update(dt);
+    renderer.render(scene, camera);
+  }
+  function syncLoop() {
+    renderer.setAnimationLoop(document.hidden ? null : frame);
+    if (document.hidden) renderer.render(scene, camera);
+  }
+  document.addEventListener('visibilitychange', syncLoop);
+  reduceMotion.addEventListener('change', () => {
+    if (reduceMotion.matches) {
+      lampDone = true;
+      lampLight.intensity = 5.5;
+      shadeMat.emissiveIntensity = 0.85;
+    }
+    renderer.render(scene, camera);
+  });
+
+  select('desk', false);
+  resize();
+  syncLoop();
+
+  // Small read-only handle so the render check can report real numbers.
+  window.__kubik = {
+    info: () => ({
+      calls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles,
+      geometries: renderer.info.memory.geometries,
+    }),
+  };
+}
+
+startScene();
+</script>
+</body>
+</html>

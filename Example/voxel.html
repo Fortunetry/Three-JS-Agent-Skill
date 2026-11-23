@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KUBIK, konfigurator blok</title>
+<meta name="description" content="Halaman demo konsep KUBIK: susunan rak dibangun dari blok. Pilih bentuk, klik blok untuk menandainya, lalu simpan ringkasan susunan.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #241c17;
+    --panel: #2e241d;
+    --deep: #150f0c;
+    --tan: #c89b6a;
+    --clay: #a85c3e;
+    --sage: #6e7f5c;
+    --cream: #ede4d3;
+    --accent: #e07a2f;
+    --muted: #c2b39d;
+    --pixel: Silkscreen, "Courier New", monospace;
+    --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--cream); }
+  body { font-family: var(--sans); line-height: 1.6; }
+  h1, h2, h3 { font-family: var(--pixel); font-weight: 700; line-height: 1.25; letter-spacing: 0; margin: 0; }
+  p { margin: 0; }
+  a { color: inherit; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 64px); }
+
+  .skip { position: absolute; left: 12px; top: -70px; z-index: 40; background: var(--accent); color: #1a120d; padding: 10px 16px; text-decoration: none; border: 2px solid var(--deep); }
+  .skip:focus { top: 12px; }
+
+  .site-head {
+    display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; justify-content: space-between;
+    padding: 16px clamp(20px, 5vw, 64px); border-bottom: 2px solid var(--deep);
+  }
+  .brand { font-family: var(--pixel); font-size: 1rem; text-decoration: none; letter-spacing: 0.02em; }
+  .brand span { color: var(--accent); }
+  .site-nav { display: flex; flex-wrap: wrap; gap: 2px 4px; }
+  .site-nav a {
+    text-decoration: none; font-size: 0.88rem; padding: 10px 12px; min-height: 44px;
+    display: inline-flex; align-items: center; border: 2px solid transparent;
+  }
+  .site-nav a:hover { border-color: rgba(237, 228, 211, 0.28); }
+  .site-nav a[aria-current="page"] { border-color: var(--accent); }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--cream); outline-offset: 3px; }
+
+  .hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: clamp(22px, 3vw, 40px); padding-top: clamp(26px, 4vw, 44px); padding-bottom: clamp(30px, 5vw, 56px); align-items: start; }
+  h1 { font-size: clamp(1.5rem, 3.1vw, 2.5rem); max-width: 20ch; }
+  .kicker { font-family: var(--pixel); font-size: 0.72rem; color: var(--accent); margin-bottom: 16px; letter-spacing: 0.04em; }
+  .lede { margin-top: 18px; color: var(--muted); max-width: 50ch; font-size: 1rem; }
+
+  .stage-box {
+    margin-top: 24px; border: 2px solid var(--deep); background: #1b1410;
+    box-shadow: 6px 6px 0 var(--deep);
+  }
+  .stage { position: relative; aspect-ratio: 4 / 3; min-height: 260px; }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: manipulation; image-rendering: pixelated; }
+  .stage-foot { display: flex; flex-wrap: wrap; gap: 8px 14px; justify-content: space-between; align-items: center; padding: 10px 12px; border-top: 2px solid var(--deep); font-size: 0.8rem; color: var(--muted); }
+  .stage-foot .mono { font-family: var(--pixel); font-size: 0.66rem; color: var(--cream); }
+  .fallback { display: none; padding: 18px; border: 2px dashed rgba(237, 228, 211, 0.3); margin-top: 12px; }
+  .no-webgl .stage { display: none; }
+  .no-webgl .fallback { display: block; }
+
+  .panel {
+    border: 2px solid var(--deep); background: var(--panel); padding: 20px;
+    box-shadow: 6px 6px 0 var(--deep);
+  }
+  .panel h2 { font-size: 1rem; }
+  .panel .hint { margin-top: 8px; font-size: 0.88rem; color: var(--muted); }
+  .fieldset { border: 0; margin: 20px 0 0; padding: 0; }
+  .fieldset legend { padding: 0; font-family: var(--pixel); font-size: 0.66rem; color: var(--muted); margin-bottom: 10px; }
+  .presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 12px;
+    border: 2px solid var(--deep); background: #3a2d24; color: var(--cream);
+    font: inherit; font-size: 0.86rem; cursor: pointer; text-decoration: none;
+    box-shadow: 3px 3px 0 var(--deep);
+  }
+  .btn:hover { background: #46372c; }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--deep); }
+  .btn[aria-pressed="true"] { background: var(--accent); color: #1a120d; }
+  .btn--wide { width: 100%; margin-top: 10px; }
+  .btn--accent { background: var(--accent); color: #1a120d; }
+  .btn--accent:hover { background: #c96a24; }
+
+  .panel output {
+    display: block; margin-top: 16px; padding: 12px; min-height: 62px;
+    border: 2px dashed rgba(237, 228, 211, 0.28); font-size: 0.86rem; color: var(--cream);
+    background: rgba(21, 15, 12, 0.55);
+  }
+
+  .section { padding: clamp(34px, 5vw, 60px) 0; border-top: 2px solid var(--deep); }
+  h2 { font-size: clamp(1.1rem, 2vw, 1.6rem); }
+  .section-intro { margin-top: 12px; color: var(--muted); max-width: 60ch; }
+  .state { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(14px, 3vw, 28px); margin-top: 28px; }
+  .state div { border: 2px solid var(--deep); background: var(--panel); padding: 16px 18px; }
+  .state dt { font-family: var(--pixel); font-size: 0.64rem; color: var(--muted); }
+  .state dd { margin: 8px 0 0; font-family: var(--pixel); font-size: 1.05rem; }
+  .note { margin-top: 24px; font-size: 0.88rem; color: var(--muted); max-width: 74ch; border-left: 2px solid var(--clay); padding-left: 14px; }
+
+  .site-foot { border-top: 2px solid var(--deep); padding: 26px 0 40px; display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; font-size: 0.86rem; color: var(--muted); }
+  .site-foot nav { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .site-foot a { text-decoration: none; border-bottom: 1px solid rgba(237, 228, 211, 0.3); }
+  .site-foot a:hover { border-color: var(--cream); }
+
+  @media (max-width: 980px) {
+    .hero { grid-template-columns: minmax(0, 1fr); }
+    .stage { aspect-ratio: 1 / 1; }
+    .state { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<a class="skip" href="#konfigurator">Lompat ke konfigurator</a>
+
+<header class="site-head">
+  <a class="brand" href="index.html">KUBIK<span>.</span></a>
+  <nav class="site-nav" aria-label="Gaya tampilan">
+    <a href="diorama.html">Diorama</a>
+    <a href="isometric.html">Isometrik</a>
+    <a href="parallax.html">Parallax</a>
+    <a href="voxel.html" aria-current="page">Voxel</a>
+    <a href="index.html">Indeks gaya</a>
+  </nav>
+</header>
+
+<main class="wrap">
+  <section class="hero" aria-labelledby="hero-title">
+    <div>
+      <p class="kicker">Konsep demo</p>
+      <h1 id="hero-title">Susun blok, lihat bentuknya langsung</h1>
+      <p class="lede">Tiga bentuk dasar dibangun dari data grid yang sama. Ganti bentuk untuk melihat batas tiap modul, lalu klik satu blok untuk menandainya. Tidak ada data yang dikirim ke mana pun.</p>
+
+      <div class="stage-box">
+        <div class="stage" id="stage" role="img" aria-label="Susunan rak yang dibangun dari blok. Bentuk dapat diganti dari panel konfigurator, dan blok dapat ditandai dengan warna oranye."></div>
+        <div class="stage-foot">
+          <span class="mono" id="stage-shape">Bentuk: Rak</span>
+          <span>Klik blok untuk menandai</span>
+        </div>
+      </div>
+      <p class="fallback" role="status">Tampilan 3D tidak tersedia di perangkat ini. Panel konfigurator dan ringkasan susunan tetap bisa dipakai.</p>
+    </div>
+
+    <div class="panel" id="konfigurator" aria-labelledby="panel-title">
+      <h2 id="panel-title">Konfigurator</h2>
+      <p class="hint">Pilih bentuk, tandai blok, lalu simpan ringkasan. Ringkasan dihitung dari susunan yang sedang tampil.</p>
+
+      <fieldset class="fieldset">
+        <legend>Bentuk dasar</legend>
+        <div class="presets">
+          <button class="btn" type="button" data-preset="rak" aria-pressed="true">Rak</button>
+          <button class="btn" type="button" data-preset="laci" aria-pressed="false">Laci</button>
+          <button class="btn" type="button" data-preset="panel" aria-pressed="false">Panel</button>
+        </div>
+      </fieldset>
+
+      <button class="btn btn--wide" type="button" id="mark-top">Tandai 4 blok teratas</button>
+      <button class="btn btn--wide" type="button" id="reset">Hapus semua tanda</button>
+      <button class="btn btn--wide btn--accent" type="button" id="save">Simpan susunan</button>
+
+      <output id="summary" aria-live="polite">Ringkasan muncul setelah Anda menekan Simpan susunan.</output>
+    </div>
+  </section>
+
+  <section class="section" id="susunan" aria-labelledby="susunan-title">
+    <h2 id="susunan-title">Susunan yang sedang tampil</h2>
+    <p class="section-intro">Angka di bawah dihitung dari grid yang sedang dirender, bukan contoh. Ganti bentuk atau tandai blok, dan nilainya ikut berubah.</p>
+
+    <dl class="state">
+      <div><dt>Bentuk aktif</dt><dd id="state-shape">Rak</dd></div>
+      <div><dt>Jumlah blok</dt><dd id="state-count">0</dd></div>
+      <div><dt>Blok ditandai</dt><dd id="state-marked">0</dd></div>
+    </dl>
+
+    <p class="note">Gambar dirender pada sepertiga resolusi lalu diperbesar tanpa penghalusan, jadi tepi blok tetap tajam. Konsekuensinya, tampilan ini memang tidak dibuat untuk terlihat halus di layar beresolusi tinggi.</p>
+  </section>
+</main>
+
+<footer class="site-foot wrap">
+  <p>KUBIK, halaman demo konsep. Tidak ada data, harga, atau testimoni nyata.</p>
+  <nav aria-label="Tautan gaya lain">
+    <a href="diorama.html">Diorama</a>
+    <a href="isometric.html">Isometrik</a>
+    <a href="parallax.html">Parallax</a>
+    <a href="index.html">Indeks gaya</a>
+  </nav>
+</footer>
+
+<script type="module">
+import * as THREE from 'three';
+
+const stage = document.getElementById('stage');
+const PIXEL = 3;
+
+const PALETTE = ['#000000', '#c89b6a', '#a85c3e', '#6e7f5c', '#ede4d3', '#e07a2f'];
+const MARK = 5;
+const LABEL = { rak: 'Rak', laci: 'Laci', panel: 'Panel' };
+
+function startScene() {
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: false });
+  } catch (err) {
+    document.body.classList.add('no-webgl');
+    console.warn('WebGL tidak tersedia, menampilkan konten teks:', err.message);
+    return;
+  }
+  renderer.setPixelRatio(1);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.domElement.style.imageRendering = 'pixelated';
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1b1410);
+
+  let VIEW = 6.8;
+  const camera = new THREE.OrthographicCamera(-VIEW, VIEW, VIEW, -VIEW, 0.1, 200);
+  const TARGET = new THREE.Vector3(0, 4.2, 0);
+  camera.position.set(13, 12, 21);
+  camera.lookAt(TARGET);
+  camera.updateMatrixWorld();
+
+  scene.add(new THREE.HemisphereLight(0xffe9cc, 0x2a1d15, 1.2));
+  const sun = new THREE.DirectionalLight(0xfff0d6, 1.45);
+  sun.position.set(-7, 12, 6);
+  scene.add(sun);
+
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  const material = new THREE.MeshLambertMaterial({ flatShading: true });
+  const color = new THREE.Color();
+  const matrix = new THREE.Matrix4();
+
+  let mesh = null;
+  let records = [];
+  let preset = 'rak';
+
+  // --- grid data, one builder per shape ---
+  function put(map, x, y, z, id) { map.set(`${x},${y},${z}`, id); }
+
+  function buildRak() {
+    const m = new Map();
+    for (let x = 0; x < 9; x++) for (let z = 0; z < 5; z++) put(m, x, 0, z, 1);
+    // Solid side panels in clay so the shelf reads as two panels, not a box.
+    for (const x of [0, 8]) for (let y = 1; y < 8; y++) for (let z = 0; z < 5; z++) put(m, x, y, z, 2);
+    for (const y of [3, 6]) for (let x = 1; x < 8; x++) for (let z = 0; z < 5; z++) put(m, x, y, z, 1);
+    for (let x = 1; x < 8; x++) for (let z = 0; z < 5; z++) put(m, x, 8, z, 1);
+    // Objects on the shelves.
+    for (let x = 2; x <= 3; x++) for (let z = 1; z <= 2; z++) put(m, x, 4, z, 3);
+    put(m, 5, 4, 1, 4);
+    for (let x = 3; x <= 5; x++) put(m, x, 7, 2, 2);
+    return m;
+  }
+
+  function buildLaci() {
+    const m = new Map();
+    for (let x = 0; x < 7; x++) for (let z = 0; z < 5; z++) put(m, x, 0, z, 1);
+    for (let y = 1; y <= 3; y++) {
+      for (let x = 0; x < 7; x++) { put(m, x, y, 0, 1); put(m, x, y, 4, 1); }
+      for (let z = 1; z < 4; z++) { put(m, 0, y, z, 1); put(m, 6, y, z, 1); }
+    }
+    for (let x = 0; x < 7; x++) for (let z = 0; z < 5; z++) put(m, x, 4, z, 2);
+    for (let x = 1; x < 6; x++) for (let y = 1; y <= 3; y++) put(m, x, y, 4, 2);
+    for (let x = 2; x <= 4; x++) put(m, x, 2, 4, 4);
+    return m;
+  }
+
+  function buildPanel() {
+    const m = new Map();
+    for (let x = 0; x < 9; x++) for (let y = 0; y < 7; y++) put(m, x, y, 0, 1);
+    for (let x = 2; x <= 6; x++) for (let z = 1; z <= 2; z++) put(m, x, 2, z, 1);
+    for (const [x, y] of [[1, 2], [4, 2], [7, 2], [2, 5], [6, 5]]) put(m, x, y, 1, 2);
+    for (let x = 3; x <= 4; x++) for (let z = 1; z <= 1; z++) put(m, x, 3, z, 3);
+    put(m, 5, 3, 1, 4);
+    put(m, 5, 4, 1, 4);
+    return m;
+  }
+
+  const BUILD = { rak: buildRak, laci: buildLaci, panel: buildPanel };
+
+  function rebuild(next) {
+    preset = next;
+    if (mesh) {
+      scene.remove(mesh);
+      mesh.dispose();
+      mesh = null;
+    }
+
+    const map = BUILD[preset]();
+    const raw = [];
+    map.forEach((id, key) => {
+      const [x, y, z] = key.split(',').map(Number);
+      raw.push({ x, y, z, id, base: id });
+    });
+
+    // Center the shape on the origin so every preset sits in frame.
+    const xs = raw.map((r) => r.x);
+    const zs = raw.map((r) => r.z);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const cz = (Math.min(...zs) + Math.max(...zs)) / 2;
+    records = raw.map((r) => ({ ...r, wx: r.x - cx, wz: r.z - cz }));
+
+    mesh = new THREE.InstancedMesh(geometry, material, records.length);
+    records.forEach((r, i) => {
+      matrix.makeTranslation(r.wx, r.y + 0.5, r.wz);
+      mesh.setMatrixAt(i, matrix);
+      mesh.setColorAt(i, color.set(PALETTE[r.id]));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.instanceColor.needsUpdate = true;
+    scene.add(mesh);
+
+    document.getElementById('stage-shape').textContent = `Bentuk: ${LABEL[preset]}`;
+    document.getElementById('state-shape').textContent = LABEL[preset];
+    document.querySelectorAll('[data-preset]').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset.preset === preset));
+    });
+    updateCounts();
+    renderer.render(scene, camera);
+  }
+
+  function updateCounts() {
+    const marked = records.filter((r) => r.id === MARK).length;
+    document.getElementById('state-count').textContent = String(records.length);
+    document.getElementById('state-marked').textContent = String(marked);
+  }
+
+  function recolor(i) {
+    mesh.setColorAt(i, color.set(PALETTE[records[i].id]));
+    mesh.instanceColor.needsUpdate = true;
+    updateCounts();
+    renderer.render(scene, camera);
+  }
+
+  // --- pointer ---
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  const canvas = renderer.domElement;
+
+  function hitAt(event) {
+    if (!mesh) return -1;
+    const r = canvas.getBoundingClientRect();
+    pointer.x = ((event.clientX - r.left) / r.width) * 2 - 1;
+    pointer.y = -((event.clientY - r.top) / r.height) * 2 + 1;
+    camera.updateMatrixWorld();
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObject(mesh, false)[0];
+    return hit && hit.instanceId !== undefined ? hit.instanceId : -1;
+  }
+
+  canvas.addEventListener('pointerup', (e) => {
+    const i = hitAt(e);
+    if (i < 0) return;
+    records[i].id = records[i].id === MARK ? records[i].base : MARK;
+    recolor(i);
+  });
+  canvas.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return;
+    canvas.style.cursor = hitAt(e) >= 0 ? 'pointer' : 'default';
+  });
+
+  // --- controls ---
+  document.querySelectorAll('[data-preset]').forEach((b) => {
+    b.addEventListener('click', () => rebuild(b.dataset.preset));
+  });
+
+  document.getElementById('mark-top').addEventListener('click', () => {
+    const top = records
+      .map((r, i) => ({ r, i }))
+      .sort((a, b) => b.r.y - a.r.y || a.i - b.i)
+      .slice(0, 4);
+    top.forEach(({ r, i }) => { r.id = MARK; recolor(i); });
+  });
+
+  document.getElementById('reset').addEventListener('click', () => {
+    records.forEach((r, i) => { r.id = r.base; });
+    records.forEach((r, i) => {
+      mesh.setColorAt(i, color.set(PALETTE[r.id]));
+    });
+    mesh.instanceColor.needsUpdate = true;
+    updateCounts();
+    renderer.render(scene, camera);
+  });
+
+  document.getElementById('save').addEventListener('click', () => {
+    const marked = records.filter((r) => r.id === MARK).length;
+    document.getElementById('summary').textContent =
+      `Susunan ${LABEL[preset].toLowerCase()}: ${records.length} blok, ${marked} ditandai. ` +
+      `Bentuk ini hanya ada di halaman demo, tidak tersimpan ke mana pun.`;
+  });
+
+  // --- resize ---
+  function resize() {
+    const w = stage.clientWidth;
+    const h = stage.clientHeight;
+    if (!w || !h) return;
+    // Render small, stretch with CSS: that is what keeps the pixels chunky.
+    renderer.setSize(Math.max(1, Math.floor(w / PIXEL)), Math.max(1, Math.floor(h / PIXEL)), false);
+    const aspect = w / h;
+    VIEW = Math.max(6.8, 5.4 / aspect);
+    camera.left = -VIEW * aspect;
+    camera.right = VIEW * aspect;
+    camera.top = VIEW;
+    camera.bottom = -VIEW;
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld();
+    renderer.render(scene, camera);
+  }
+  window.addEventListener('resize', resize);
+
+  rebuild('rak');
+  resize();
+
+  window.__kubik = {
+    info: () => ({
+      calls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles,
+      geometries: renderer.info.memory.geometries,
+    }),
+  };
+}
+
+startScene();
+</script>
+</body>
+</html>
